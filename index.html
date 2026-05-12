@@ -175,6 +175,14 @@
   .edit-close-btn:hover{color:var(--text);}
   .edit-actions{display:flex;gap:10px;margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);}
 
+
+  .date-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .date-filter label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;}
+  .date-filter input[type="date"]{font-size:12px;padding:5px 10px;border:1.5px solid var(--border);border-radius:20px;background:var(--white);color:var(--text);font-family:var(--sans);outline:none;cursor:pointer;}
+  .date-filter input[type="date"]:focus{border-color:var(--blue-md);}
+  .date-clear-btn{background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:all 0.15s;}
+  .date-clear-btn:hover{border-color:var(--navy);color:var(--navy);}
+
 </style>
 </head>
 <body>
@@ -303,6 +311,13 @@
       <button class="filter-btn active" data-filter="ALL">All</button>
       <button class="filter-btn" data-filter="USA">🇺🇸 USA</button>
       <button class="filter-btn" data-filter="EGYPT">🇪🇬 Egypt</button>
+    </div>
+    <div class="date-filter">
+      <label>From</label>
+      <input type="date" id="filter-date-from">
+      <label>To</label>
+      <input type="date" id="filter-date-to">
+      <button class="date-clear-btn" id="date-clear-btn">✕ Clear</button>
     </div>
     <button class="btn btn-ghost" id="btn-refresh" style="font-size:12px;padding:6px 14px;">↻ Refresh</button>
   </div>
@@ -481,13 +496,20 @@ function formatDate(d) {
 }
 
 function render() {
-  const filtered = activeFilter === "ALL" ? entries : entries.filter(e => e.country === activeFilter);
+  const dateFrom = document.getElementById('filter-date-from') ? document.getElementById('filter-date-from').value : '';
+  const dateTo   = document.getElementById('filter-date-to')   ? document.getElementById('filter-date-to').value   : '';
+  const filtered = entries.filter(e => {
+    const countryOk = activeFilter === "ALL" || e.country === activeFilter;
+    const fromOk    = !dateFrom || e.date >= dateFrom;
+    const toOk      = !dateTo   || e.date <= dateTo;
+    return countryOk && fromOk && toOk;
+  });
   const displaySet = filtered; // stats based on current filter
   const totalHrs = displaySet.reduce((s,e) => s + (parseFloat(e.hours)||0), 0);
   $("stat-total").textContent = displaySet.length;
   $("stat-hours").textContent = totalHrs%1===0 ? totalHrs : totalHrs.toFixed(1);
-  $("stat-usa").textContent = activeFilter==="EGYPT" ? 0 : entries.filter(e=>e.country==="USA").length;
-  $("stat-egypt").textContent = activeFilter==="USA" ? 0 : entries.filter(e=>e.country==="EGYPT").length;
+  $("stat-usa").textContent = activeFilter==="EGYPT" ? 0 : new Set(entries.filter(e=>e.country==="USA").map(e=>e.project)).size;
+  $("stat-egypt").textContent = activeFilter==="USA" ? 0 : new Set(entries.filter(e=>e.country==="EGYPT").map(e=>e.project)).size;
   $("stat-eng").textContent = new Set(displaySet.map(e=>e.engineer)).size;
   $("total-pill").textContent = displaySet.length + (displaySet.length===1?" entry":" entries");
 
@@ -550,6 +572,15 @@ document.querySelectorAll("thead th.sortable").forEach(th => {
     }
     render();
   });
+});
+
+// Date filter listeners
+document.getElementById("filter-date-from").addEventListener("change", render);
+document.getElementById("filter-date-to").addEventListener("change", render);
+document.getElementById("date-clear-btn").addEventListener("click", () => {
+  document.getElementById("filter-date-from").value = "";
+  document.getElementById("filter-date-to").value = "";
+  render();
 });
 
 function showToast(msg){
