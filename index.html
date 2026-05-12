@@ -281,7 +281,7 @@
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyo7qPxFhOPNA-YYTqfewz043en8TZQIATmvkXqR5r2CcKcUmdwHMlcJAoRtcRU-7_n4g/exec";
 </script>
 
-<div class="loading-overlay" id="loading-overlay">
+<div class="loading-overlay" id="loading-overlay" style="display:none;">
   <div class="spinner"></div> Loading from Google Sheets…
 </div>
 
@@ -438,6 +438,7 @@ async function apiPost(payload) {
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "PASTE_YOUR_APPS_SCRIPT_URL_HERE") return;
+  $("loading-overlay").style.display = "flex";
   try {
     entries = await apiGet();
     render();
@@ -623,7 +624,7 @@ function showToast(msg){
 }
 
 window.deleteEntry=deleteEntry;
-init();
+// init() is called from showApp() after login
 </script>
 
 <!-- PWA Install Banner -->
@@ -715,6 +716,7 @@ function checkSession() {
   }
 }
 
+let appInitialized = false;
 function showApp(user) {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('logout-btn').style.display = 'inline-block';
@@ -734,6 +736,11 @@ function showApp(user) {
     for (let opt of eng.options) {
       if (opt.text === mapped) { eng.value = opt.value; break; }
     }
+  }
+  // Start the app data only after login
+  if (!appInitialized) {
+    appInitialized = true;
+    init();
   }
 }
 
